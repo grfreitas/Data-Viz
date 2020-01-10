@@ -1,0 +1,99 @@
+<meta charset="utf-8">
+
+<style>
+    body {
+        margin: 0;
+        background: #000000;
+        min-width: 960px;
+    }
+
+    rect {
+        fill: none;
+        pointer-events: all;
+    }
+
+    circle {
+        fill: none;
+        stroke-width: 3px;
+    }
+</style>
+
+<body>
+<script src="http://d3js.org/d3.v5.min.js"></script>
+<script>
+
+    let width=Math.max(960, innerWidth),
+        height=Math.max(500, innerHeight);
+
+    let svg=d3.select("body").append("svg")
+        .attr("width", width)
+        .attr("height", height);
+
+    d3.csv("test.csv").then(function (data) {
+        data.forEach(function (d) {
+            d.dx= +d.dx;
+            d.dy= +d.dy;
+            d.x0= +d.x0;
+            d.y0= +d.y0;
+            d.hod= +d.hod;
+        });
+
+        let i=0;
+        let scaleFactor = 1;
+
+        let xScale=d3.scaleLinear()
+            .domain([scaleFactor * d3.min(data, function (d) {
+                return d.dx;
+            }), scaleFactor * d3.max(data, function (d) {
+                return d.dx;
+            })])
+            .range([0, width]);  // Set margins for x specific
+
+        let yScale=d3.scaleLinear()
+            .domain([scaleFactor * d3.min(data, function (d) {
+                return d.dy;
+            }), scaleFactor * d3.max(data, function (d) {
+                return d.dy;
+            })])
+            .range([height, 0]);  // Set margins for y specific
+
+        const unique_destinies=d3.map(data, function (d) {
+            return d['to'];
+        }).keys();
+
+        function line() {
+            unique_destinies.forEach(function (item, index) {
+                let frame=data
+                    .filter(function (d) {
+                        return d.hod === i && d['to'] === item
+                    })[0];
+
+                let x0=xScale(frame.x0);
+                let y0=yScale(frame.y0);
+                let xf=xScale(frame.dx);
+                let yf=yScale(frame.dy);
+
+                let color = "rgb(" + 255*index/unique_destinies.length + ",123,255)";
+
+                svg.append("line")
+                    .attr("x1", x0)
+                    .attr("y1", y0)
+                    .attr("x2", xf)
+                    .attr("y2", yf)
+                    .style("stroke", color)
+                    .style("stroke-width", .5)
+                    .transition()
+                    .style("stroke-opacity", .01)
+                    .remove()
+                ;
+
+                i=i + 1;
+                i=i % 24;
+            });
+        }
+
+        setInterval(line, 10)
+    });
+
+
+</script>
